@@ -1,0 +1,19 @@
+{
+    "teachers": {
+        "admin@mergington.edu": {
+            "password": "school2025!",
+            "name": "Admin User",
+            "role": "admin"
+        },
+        "principal@mergington.edu": {
+            "password": "principal123",
+            "name": "Principal Johnson",
+            "role": "principal"
+        },
+        "coordinator@mergington.edu": {
+            "password": "activities456",
+            "name": "Activities Coordinator",
+            "role": "coordinator"
+        }
+    }
+}

@@ -3,6 +3,118 @@ document.addEventListener("DOMContentLoaded", () => {
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
+  
+  // Authentication elements
+  const userIcon = document.getElementById("user-icon");
+  const loginArea = document.getElementById("login-area");
+  const userArea = document.getElementById("user-area");
+  const userInfo = document.getElementById("user-info");
+  const loginBtn = document.getElementById("login-btn");
+  const cancelLoginBtn = document.getElementById("cancel-login-btn");
+  const teacherEmail = document.getElementById("teacher-email");
+  const teacherPassword = document.getElementById("teacher-password");
+  
+  // Authentication state
+  let currentTeacher = null;
+  let authToken = localStorage.getItem("auth_token");
+
+  // Authentication functions
+  async function checkAuthStatus() {
+    if (authToken) {
+      try {
+        const response = await fetch("/auth/me", {
+          headers: {
+            "Authorization": `Bearer ${authToken}`
+          }
+        });
+        
+        if (response.ok) {
+          currentTeacher = await response.json();
+          updateAuthUI();
+        } else {
+          // Token invalid, clear it
+          localStorage.removeItem("auth_token");
+          authToken = null;
+          currentTeacher = null;
+          updateAuthUI();
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        localStorage.removeItem("auth_token");
+        authToken = null;
+        currentTeacher = null;
+        updateAuthUI();
+      }
+    }
+  }
+  
+  function updateAuthUI() {
+    if (currentTeacher) {
+      userInfo.textContent = `Welcome, ${currentTeacher.name}`;
+      userInfo.classList.remove("hidden");
+      userIcon.textContent = "🔓";
+      userIcon.onclick = logout;
+    } else {
+      userInfo.classList.add("hidden");
+      userIcon.textContent = "👤";
+      userIcon.onclick = showLoginForm;
+    }
+  }
+  
+  function showLoginForm() {
+    loginArea.classList.remove("hidden");
+    teacherEmail.focus();
+  }
+  
+  function hideLoginForm() {
+    loginArea.classList.add("hidden");
+    teacherEmail.value = "";
+    teacherPassword.value = "";
+  }
+  
+  async function login() {
+    const email = teacherEmail.value;
+    const password = teacherPassword.value;
+    
+    if (!email || !password) {
+      alert("Please enter both email and password");
+      return;
+    }
+    
+    try {
+      const response = await fetch("/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        authToken = result.access_token;
+        currentTeacher = result.teacher;
+        localStorage.setItem("auth_token", authToken);
+        updateAuthUI();
+        hideLoginForm();
+        fetchActivities(); // Refresh to show delete buttons
+      } else {
+        alert(result.detail || "Login failed");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Login failed. Please try again.");
+    }
+  }
+  
+  function logout() {
+    authToken = null;
+    currentTeacher = null;
+    localStorage.removeItem("auth_token");
+    updateAuthUI();
+    fetchActivities(); // Refresh to hide delete buttons
+  }
 
   // Function to fetch activities from API
   async function fetchActivities() {
@@ -21,7 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const spotsLeft =
           details.max_participants - details.participants.length;
 
-        // Create participants HTML with delete icons instead of bullet points
+        // Create participants HTML with delete icons for teachers only
         const participantsHTML =
           details.participants.length > 0
             ? `<div class="participants-section">
@@ -30,7 +142,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 ${details.participants
                   .map(
                     (email) =>
-                      `<li><span class="participant-email">${email}</span><button class="delete-btn" data-activity="${name}" data-email="${email}">❌</button></li>`
+                      `<li><span class="participant-email">${email}</span>${
+                        currentTeacher ? `<button class="delete-btn" data-activity="${name}" data-email="${email}">❌</button>` : ''
+                      }</li>`
                   )
                   .join("")}
               </ul>
@@ -73,6 +187,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const activity = button.getAttribute("data-activity");
     const email = button.getAttribute("data-email");
 
+    if (!currentTeacher) {
+      alert("Only teachers can remove students from activities");
+      return;
+    }
+
+    if (!confirm(`Remove ${email} from ${activity}?`)) {
+      return;
+    }
+
     try {
       const response = await fetch(
         `/activities/${encodeURIComponent(
@@ -80,6 +203,9 @@ document.addEventListener("DOMContentLoaded", () => {
         )}/unregister?email=${encodeURIComponent(email)}`,
         {
           method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${authToken}`
+          }
         }
       );
 
@@ -155,6 +281,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Authentication event listeners
+  loginBtn.addEventListener("click", login);
+  cancelLoginBtn.addEventListener("click", hideLoginForm);
+  
+  // Allow Enter key to submit login
+  teacherPassword.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      login();
+    }
+  });
+
   // Initialize app
+  checkAuthStatus();
   fetchActivities();
 });
