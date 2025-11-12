@@ -22,10 +22,71 @@ header {
   background-color: #1a237e;
   color: white;
   border-radius: 5px;
+  position: relative;
 }
 
 header h1 {
   margin-bottom: 10px;
+}
+
+.auth-section {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#user-icon {
+  background: none;
+  border: 2px solid white;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+#user-icon:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+#login-area {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+#login-area input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+#login-area button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#login-btn {
+  background-color: #4caf50;
+  color: white;
+}
+
+#cancel-login-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+#user-info {
+  color: white;
+  font-size: 14px;
+  margin-right: 10px;
 }
 
 main {
@@ -138,6 +199,10 @@ section h3 {
   display: block;
   margin-bottom: 5px;
   font-weight: bold;
+}
+
+.hidden {
+  display: none !important;
 }
 
 .form-group input,
